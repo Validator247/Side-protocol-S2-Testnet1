@@ -1,11 +1,28 @@
 # Side-protocol-S2-Testnet1
 
-Update system
+# Hardware requirements
+
+        - Memory: 8 GB RAM
+        - CPU: 4 cores
+        - Disk: 200 GB NVME
+        - Bandwidth: 1 Gbps
+        - Linux amd64 arm64 (Ubuntu LTS release)
+
+# Servive:
+
+API: https://sided-testnet-api.validator247.com
+
+RPC: https://sided-testnet-rpc.validator247.com
+
+Explorer : https://explorer.validator247.com/side-protocol-testnet/staking/bcvaloper13nn5m5dq6ttyrwq8zqx5nu77sp3w3ppkhf74a5
+
+
+# Update system
 
     sudo apt update
     sudo apt-get install git curl build-essential make jq gcc snapd chrony lz4 tmux unzip bc -y
 
- Install Go
+# Install Go
 
      rm -rf $HOME/go
      sudo rm -rf /usr/local/go
@@ -20,7 +37,7 @@ Update system
      source $HOME/.profile
      go version
 
- Build sided binary
+# Build sided binary
 
      cd $HOME
      rm -rf sidechain
@@ -30,19 +47,19 @@ Update system
      make install
      sided version
 
- Set up variables
+# Set up variables
 
      sided init NodeName --chain-id=S2-testnet-1
 
-Download Genesis:
+# Download Genesis:
 
         wget https://github.com/Validator247/Side-protocol-S2-Testnet1/raw/main/genesis.json -O genesis.json
 
-Download addrbook
+# Download addrbook
 
         wget https://github.com/Validator247/Side-protocol-S2-Testnet1/raw/main/addrbook.json -O addrbook.json
 
-Create Service
+# Create Service
 
     sudo tee /etc/systemd/system/sided.service > /dev/null <<EOF
     [Unit]
@@ -60,7 +77,15 @@ Create Service
     sudo systemctl daemon-reload
     sudo systemctl enable sided  
 
-State-sync
+ # Snapshot 
+
+    SNAP_NAME=$(curl -s https://ss-t.side.nodestake.org/ | egrep -o ">20.*\.tar.lz4" | tr -d ">")
+
+    curl -o - -L https://ss-t.side.nodestake.org/${SNAP_NAME}  | lz4 -c -d - | tar -x -C $HOME/.side
+
+    mv $HOME/.side/priv_validator_state.json.backup $HOME/.side/data/priv_validator_state.json     
+
+# State-sync
 
     sudo systemctl stop sided
 
@@ -86,23 +111,23 @@ State-sync
 
     sudo systemctl restart sided && journalctl -u sided -f -o cat
 
- Create a wallet
+ # Create a wallet
 
          sided keys add wallet
 
-Recover existing key
+# Recover existing key
 
         sided keys add wallet --recover
 
-Query Wallet Balance
+# Query Wallet Balance
 
     sided q bank balances $(sided keys show wallet -a)
 
-Check sync status
+# Check sync status
 
     sided status 2>&1 | jq .SyncInfo.catching_up
 
-Create Validator
+# Create Validator
 
     sided tx staking create-validator \
     --amount=1000000uside \
@@ -122,7 +147,7 @@ Create Validator
     -y
 
 
-Delegate tokens to your validator
+# Delegate tokens to your validator
 
         sided tx staking delegate $(sided keys show wallet --bech val -a)  <AMOUNT>uside --from wallet --fees 2000uside --gas 200000 -y
 
